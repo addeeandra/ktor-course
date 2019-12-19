@@ -3,10 +3,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
-import io.ktor.auth.Authentication
-import io.ktor.auth.UserIdPrincipal
-import io.ktor.auth.authenticate
-import io.ktor.auth.basic
+import io.ktor.auth.*
 import io.ktor.auth.jwt.jwt
 import io.ktor.features.ContentNegotiation
 import io.ktor.http.ContentType
@@ -24,7 +21,7 @@ import java.util.*
 
 data class User(val name: String, val password: String)
 
-data class Snippet(val text: String)
+data class Snippet(val user: String, val text: String)
 
 data class PostSnippet(val snippet: PostSnippet.Text) {
     data class Text(val text: String)
@@ -38,8 +35,8 @@ val users = Collections.synchronizedMap(
 
 val snippets = Collections.synchronizedList(
     mutableListOf(
-        Snippet("Hello"),
-        Snippet("KTOR!")
+        Snippet("myname", "Hello"),
+        Snippet("myname", "KTOR!")
     )
 )
 
@@ -94,7 +91,8 @@ fun Application.module() {
             authenticate {
                 post {
                     val post = call.receive<PostSnippet>()
-                    snippets += Snippet(post.snippet.text)
+                    val principal = call.principal<UserIdPrincipal>() ?: error("No principal")
+                    snippets += Snippet(principal.name, post.snippet.text)
                     call.respond(mapOf("OK" to true))
                 }
             }
