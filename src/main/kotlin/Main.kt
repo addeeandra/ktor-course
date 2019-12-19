@@ -3,11 +3,17 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
-import io.ktor.auth.*
+import io.ktor.auth.Authentication
+import io.ktor.auth.UserIdPrincipal
+import io.ktor.auth.authenticate
 import io.ktor.auth.jwt.jwt
+import io.ktor.auth.principal
+import io.ktor.features.CORS
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
 import io.ktor.request.receive
@@ -19,10 +25,9 @@ import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import java.lang.RuntimeException
 import java.util.*
 
-class InvalidCredentialsException(message: String): RuntimeException(message)
+class InvalidCredentialsException(message: String) : RuntimeException(message)
 
 data class User(val name: String, val password: String)
 
@@ -59,6 +64,18 @@ open class SimpleJWT(val secret: String) {
 }
 
 fun Application.module() {
+
+    install(CORS) {
+        method(HttpMethod.Options)
+        method(HttpMethod.Get)
+        method(HttpMethod.Post)
+        method(HttpMethod.Put)
+        method(HttpMethod.Delete)
+        method(HttpMethod.Patch)
+        header(HttpHeaders.Authorization)
+        allowCredentials = true
+        anyHost()
+    }
 
     install(StatusPages) {
         exception<InvalidCredentialsException> { e ->
@@ -102,7 +119,8 @@ fun Application.module() {
             authenticate {
                 post {
                     val post = call.receive<PostSnippet>()
-                    val principal = call.principal<UserIdPrincipal>() ?: throw InvalidCredentialsException("No principal found")
+                    val principal =
+                        call.principal<UserIdPrincipal>() ?: throw InvalidCredentialsException("No principal found")
                     snippets += Snippet(principal.name, post.snippet.text)
                     call.respond(mapOf("OK" to true))
                 }
