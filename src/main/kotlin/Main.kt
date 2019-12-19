@@ -1,6 +1,10 @@
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.auth.Authentication
+import io.ktor.auth.UserIdPrincipal
+import io.ktor.auth.authenticate
+import io.ktor.auth.basic
 import io.ktor.features.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.jackson.jackson
@@ -29,6 +33,15 @@ val snippets = Collections.synchronizedList(
 )
 
 fun Application.module() {
+    install(Authentication) {
+        basic {
+            realm = "myrealm"
+            validate {
+                if (it.name == "inibukanadit" && it.password == "password") UserIdPrincipal("inibukanadit")
+                else null
+            }
+        }
+    }
     install(ContentNegotiation) {
         jackson { }
     }
@@ -43,10 +56,12 @@ fun Application.module() {
             get {
                 call.respond(mapOf("snippets" to synchronized(snippets) { snippets.toList() }))
             }
-            post {
-                val post = call.receive<PostSnippet>()
-                snippets += Snippet(post.snippet.text)
-                call.respond(mapOf("OK" to true))
+            authenticate {
+                post {
+                    val post = call.receive<PostSnippet>()
+                    snippets += Snippet(post.snippet.text)
+                    call.respond(mapOf("OK" to true))
+                }
             }
         }
     }
