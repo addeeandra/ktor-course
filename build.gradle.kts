@@ -1,16 +1,24 @@
-plugins {
-    kotlin("jvm") version "1.3.61"
-}
-
 group = "me.inibukanadit"
 version = "1.0-SNAPSHOT"
 
+plugins {
+    application
+    kotlin("jvm") version "1.3.61"
+}
+
+application.mainClassName = "MainKt"
+
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
+    val ktorVersion = "1.2.6"
+
     implementation(kotlin("stdlib-jdk8"))
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
 }
 
 tasks {
